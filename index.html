@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terminal Gamer // Chat Criptografado</title>
+  <style>
+    :root {
+      --bg: #070b08;
+      --panel: #0d1510;
+      --panel-2: #121d16;
+      --neon: #00ff66;
+      --neon-dim: rgba(0, 255, 102, 0.22);
+      --text: #e6f7ed;
+      --muted: #7aa38a;
+      --danger: #ff3b5c;
+      --warn: #ffb800;
+      --border: #1d3626;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #0f2216 0%, var(--bg) 65%);
+      color: var(--text);
+      font-family: "Courier New", Consolas, monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 720px;
+      background: var(--panel);
+      border: 1px solid var(--neon);
+      border-radius: 10px;
+      box-shadow: 0 0 24px var(--neon-dim);
+      overflow: hidden;
+    }
+
+    .header {
+      background: var(--panel-2);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title {
+      color: var(--neon);
+      font-weight: bold;
+      letter-spacing: 1px;
+      font-size: 1rem;
+      text-shadow: 0 0 8px var(--neon-dim);
+    }
+
+    .status-badge {
+      font-size: 0.78rem;
+      color: var(--neon);
+      border: 1px solid var(--neon);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+
+    .screen {
+      padding: 20px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--neon);
+      box-shadow: 0 0 8px var(--neon-dim);
+    }
+
+    button {
+      background: var(--neon);
+      color: #041108;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-family: inherit;
+      font-weight: bold;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      box-shadow: 0 0 12px var(--neon);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button.btn-secondary {
+      background: transparent;
+      color: var(--neon);
+      border: 1px solid var(--neon);
+      padding: 6px 10px;
+      font-size: 0.78rem;
+    }
+
+    button.btn-report {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      padding: 4px 8px;
+      font-size: 0.74rem;
+      white-space: nowrap;
+    }
+
+    button.btn-report:hover:not(:disabled) {
+      background: var(--danger);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(255, 59, 92, 0.5);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .chat-box {
+      height: 360px;
+      overflow-y: auto;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msg {
+      background: var(--panel-2);
+      border-left: 3px solid var(--neon);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .msg.reported {
+      border-left-color: var(--danger);
+      opacity: 0.8;
+    }
+
+    .msg-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .msg-user {
+      color: var(--neon);
+      font-weight: bold;
+    }
+
+    .msg-text {
+      font-size: 0.92rem;
+      word-break: break-word;
+    }
+
+    .tag-reported {
+      color: var(--danger);
+      font-weight: bold;
+      font-size: 0.75rem;
+      margin-left: 6px;
+    }
+
+    .send-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .send-row input {
+      margin-bottom: 0;
+      flex: 1;
+    }
+
+    .alert {
+      margin-top: 10px;
+      padding: 9px 12px;
+      border-radius: 6px;
+      font-size: 0.84rem;
+      border: 1px solid var(--warn);
+      color: var(--warn);
+      background: rgba(255, 184, 0, 0.08);
+    }
+
+    .alert.success {
+      border-color: var(--neon);
+      color: var(--neon);
+      background: rgba(0, 255, 102, 0.08);
+    }
+
+    .alert.error {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: rgba(255, 59, 92, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">&gt;_ GAMER_CHAT // SECURE_ROOM</div>
+      <div id="roomBadge" class="status-badge hidden">SALA ATIVA</div>
+    </div>
+
+    <!-- 1. TELA DE LOGIN -->
+    <div id="loginScreen" class="screen">
+      <label for="nicknameInput">Apelido do Jogador</label>
+      <input type="text" id="nicknameInput" placeholder="Ex: ShadowByte" maxlength="24" />
+
+      <label for="roomKeyInput">Senha / Chave Secreta da Sala</label>
+      <input type="password" id="roomKeyInput" placeholder="Digite a chave da sala..." />
+
+      <button id="enterBtn">Entrar na Sala</button>
+      <div id="loginAlert" class="alert hidden"></div>
+    </div>
+
+    <!-- 2. TELA DE CHAT -->
+    <div id="chatScreen" class="screen hidden">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span id="playerInfo" style="font-size: 0.85rem; color: var(--muted);"></span>
+        <button id="leaveBtn" class="btn-secondary">Sair</button>
+      </div>
+
+      <div id="chatBox" class="chat-box">
+        <div style="color: var(--muted); font-size: 0.85rem;">Carregando mensagens...</div>
+      </div>
+
+      <form id="sendForm" class="send-row">
+        <input type="text" id="messageInput" placeholder="Digite sua mensagem..." autocomplete="off" required />
+        <button type="submit" id="sendBtn">Enviar</button>
+      </form>
+
+      <div id="chatAlert" class="alert hidden"></div>
+    </div>
+  </div>
+
+  <script>
+    // Cole aqui a URL /exec do seu Google Apps Script
+    const SCRIPT_URL = "[COLE AQUI SUA URL /exec]";
+
+    // Palavras ofensivas / xingamentos em PT-BR (expanda conforme necessário)
+    const BLOCKED_WORDS = [
+      "idiota", "imbecil", "otario", "otário", "burro", "estupido", "estúpido",
+      "merda", "bosta", "porra", "caralho", "cacete", "puta", "puto",
+      "fdp", "filho da puta", "arrombado", "vagabundo", "vagabunda",
+      "desgraca", "desgraça", "lixo", "corno", "viado", "babaca"
+    ];
+
+    let currentUser = "";
+    let roomKey = "";
+    let pollInterval = null;
+    let lastRenderSignature = "";
+
+    const loginScreen = document.getElementById("loginScreen");
+    const chatScreen = document.getElementById("chatScreen");
+    const nicknameInput = document.getElementById("nicknameInput");
+    const roomKeyInput = document.getElementById("roomKeyInput");
+    const enterBtn = document.getElementById("enterBtn");
+    const leaveBtn = document.getElementById("leaveBtn");
+    const loginAlert = document.getElementById("loginAlert");
+    const chatAlert = document.getElementById("chatAlert");
+    const chatBox = document.getElementById("chatBox");
+    const sendForm = document.getElementById("sendForm");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const playerInfo = document.getElementById("playerInfo");
+    const roomBadge = document.getElementById("roomBadge");
+
+    function showAlert(el, msg, type = "warn") {
+      el.textContent = msg;
+      el.className = `alert ${type}`;
+      el.classList.remove("hidden");
+    }
+
+    function hideAlert(el) {
+      el.classList.add("hidden");
+    }
+
+    // 3. Filtro automático contra xingamentos e ofensas em PT-BR
+    function normalizeText(text) {
+      return text
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function containsOffensiveWord(text) {
+      const clean = normalizeText(text);
+      const words = clean.split(" ");
+      return BLOCKED_WORDS.some((bad) => {
+        const cleanBad = normalizeText(bad);
+        if (cleanBad.includes(" ")) {
+          return clean.includes(cleanBad);
+        }
+        return words.includes(cleanBad);
+      });
+    }
+
+    // 5. Criptografia XOR + Base64 com suporte a UTF-8
+    function xorTransform(str, key) {
+      let out = "";
+      for (let i = 0; i < str.length; i++) {
+        const code = str.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+        out += String.fromCharCode(code);
+      }
+      return out;
+    }
+
+    function encryptText(plainText, key) {
+      if (!plainText) return "";
+      const xored = xorTransform(plainText, key);
+      const utf8Bytes = new TextEncoder().encode(xored);
+      let binary = "";
+      for (let i = 0; i < utf8Bytes.length; i++) {
+        binary += String.fromCharCode(utf8Bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    function decryptText(cipherBase64, key) {
+      if (!cipherBase64) return "";
+      try {
+        const binary = atob(cipherBase64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        const xored = new TextDecoder().decode(bytes);
+        const plain = xorTransform(xored, key);
+        // Evita exibir lixo caso a chave esteja incorreta
+        if (!/^[\x20-\x7E\u00A0-\u024F\s]*$/.test(plain)) {
+          return "[Chave incorreta ou dado ilegível]";
+        }
+        return plain;
+      } catch (err) {
+        return "[Falha ao descriptografar]";
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function formatTime(rawDate) {
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return String(rawDate || "");
+      return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+
+    // Login
+    enterBtn.addEventListener("click", () => {
+      hideAlert(loginAlert);
+      const nick = nicknameInput.value.trim();
+      const key = roomKeyInput.value;
+
+      if (!nick || !key) {
+        showAlert(loginAlert, "Preencha o apelido e a chave secreta da sala.", "error");
+        return;
+      }
+
+      if (containsOffensiveWord(nick)) {
+        showAlert(loginAlert, "Apelido bloqueado: evite palavras ofensivas ou xingamentos.", "error");
+        return;
+      }
+
+      if (!SCRIPT_URL.startsWith("http")) {
+        showAlert(loginAlert, "Configure a URL /exec do Google Apps Script no código antes de entrar.", "error");
+        return;
+      }
+
+      currentUser = nick;
+      roomKey = key;
+
+      loginScreen.classList.add("hidden");
+      chatScreen.classList.remove("hidden");
+      roomBadge.classList.remove("hidden");
+      playerInfo.textContent = `Jogador: ${currentUser}`;
+
+      lastRenderSignature = "";
+      loadMessages();
+      pollInterval = setInterval(loadMessages, 4000);
+      messageInput.focus();
+    });
+
+    leaveBtn.addEventListener("click", () => {
+      clearInterval(pollInterval);
+      pollInterval = null;
+      currentUser = "";
+      roomKey = "";
+      chatScreen.classList.add("hidden");
+      roomBadge.classList.add("hidden");
+      loginScreen.classList.remove("hidden");
+      hideAlert(chatAlert);
+    });
+
+    // 2. Carregar mensagens via GET a cada 4 segundos
+    async function loadMessages() {
+      try {
+        const res = await fetch(SCRIPT_URL, { method: "GET" });
+        if (!res.ok) throw new Error("Erro HTTP " + res.status);
+        const rows = await res.json();
+
+        const sig = JSON.stringify(rows);
+        if (sig === lastRenderSignature) return;
+        lastRenderSignature = sig;
+
+        renderMessages(Array.isArray(rows) ? rows : []);
+      } catch (err) {
+        showAlert(chatAlert, "Falha ao atualizar mensagens: " + err.message, "error");
+      }
+    }
+
+    function renderMessages(rows) {
+      const wasAtBottom = chatBox.scrollTop + chatBox.clientHeight >= chatBox.scrollHeight - 20;
+
+      if (rows.length === 0) {
+        chatBox.innerHTML = `<div style="color: var(--muted); font-size: 0.85rem;">Nenhuma mensagem ainda. Seja o primeiro!</div>`;
+        return;
+      }
+
+      chatBox.innerHTML = rows.map((row) => {
+        const userDecrypted = decryptText(row.usuario_cripto, roomKey);
+        const msgDecrypted = decryptText(row.mensagem_cripto, roomKey);
+        const isReported = String(row.status_denuncia || "").toUpperCase() === "DENUNCIADA";
+        const rowNum = row.linha;
+
+        return `
+          <div class="msg ${isReported ? "reported" : ""}">
+            <div>
+              <div class="msg-meta">
+                <span class="msg-user">${escapeHtml(userDecrypted)}</span>
+                <span>• ${escapeHtml(formatTime(row.data_hora))}</span>
+                ${isReported ? `<span class="tag-reported">[DENUNCIADA]</span>` : ""}
+              </div>
+              <div class="msg-text">${escapeHtml(msgDecrypted)}</div>
+            </div>
+            <button
+              class="btn-report"
+              onclick="reportRow(${rowNum}, this)"
+              ${isReported ? "disabled" : ""}
+            >
+              ${isReported ? "Denunciada" : "Denunciar"}
+            </button>
+          </div>
+        `;
+      }).join("");
+
+      if (wasAtBottom) {
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+    }
+
+    // Enviar mensagem via POST
+    sendForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideAlert(chatAlert);
+
+      const rawMsg = messageInput.value.trim();
+      if (!rawMsg) return;
+
+      if (containsOffensiveWord(rawMsg)) {
+        showAlert(chatAlert, "Mensagem bloqueada: xingamentos e palavras ofensivas não são permitidos.", "error");
+        return;
+      }
+
+      sendBtn.disabled = true;
+      try {
+        const payload = {
+          usuario_cripto: encryptText(currentUser, roomKey),
+          mensagem_cripto: encryptText(rawMsg, roomKey),
+          status_denuncia: "NORMAL"
+        };
+
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error("Erro HTTP " + res.status);
+
+        messageInput.value = "";
+        showAlert(chatAlert, "Mensagem criptografada e enviada!", "success");
+        lastRenderSignature = "";
+        await loadMessages();
+        chatBox.scrollTop = chatBox.scrollHeight;
+      } catch (err) {
+        showAlert(chatAlert, "Erro ao enviar mensagem: " + err.message, "error");
+      } finally {
+        sendBtn.disabled = false;
+        messageInput.focus();
+      }
+    });
+
+    // 4. Denunciar linha via POST
+    window.reportRow = async function (linha, btnEl) {
+      if (!linha) return;
+      hideAlert(chatAlert);
+      if (btnEl) btnEl.disabled = true;
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ acao: "denunciar", linha: linha })
+        });
+
+        if (!res.ok) throw new Error("Erro HTTP " + res.status);
+
+        showAlert(chatAlert, `Linha ${linha} marcada como DENUNCIADA na planilha.`, "warn");
+        lastRenderSignature = "";
+        await loadMessages();
+      } catch (err) {
+        if (btnEl) btnEl.disabled = false;
+        showAlert(chatAlert, "Falha ao registrar denúncia: " + err.message, "error");
+      }
+    };
+  </script>
+</body>
+</html>
